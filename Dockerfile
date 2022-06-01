@@ -1,11 +1,11 @@
-FROM mcr.microsoft.com/dotnet/sdk:5.0.408-buster-slim-amd64 AS build
-#mcr.microsoft.com/dotnet/framework/sdk:5.0
-WORKDIR /app
-
-COPY SampleWebApplication .
-RUN powershell nuget restore; msbuild /p:Configuration=Release /p:publishUrl=/out /p:DeployDefaultTarget=WebPublish /p:DeployOnBuild=True /p:WebPublishMethod=FileSystem /p:DeleteExistingFiles=True
-
+# Take a base image from the public Docker Hub repositories
+FROM mcr.microsoft.com/dotnet/sdk:5.0.408-buster-slim-amd64 AS build-env
+# Navigate to the “/app” folder (create if not exists)
+WORKDIR /app# Copy csproj and download the dependencies listed in that file
+COPY *.csproj ./
+RUN dotnet restore# Copy all files in the project folder
+COPY . ./
+RUN dotnet publish -c Release -o out# Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:5.0.17-bullseye-slim-amd64 AS runtime
-#mcr.microsoft.com/dotnet/framework/aspnet:5.0
 WORKDIR /app
-COPY --from=build /out /inetpub/wwwroot
+COPY --from=build-env /app/out .ENTRYPOINT [“dotnet”, “awesomeMVC.dll”]

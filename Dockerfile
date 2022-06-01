@@ -1,12 +1,14 @@
-FROM mcr.microsoft.com/dotnet/sdk:5.0.408-buster-slim-amd64 AS build
-#mcr.microsoft.com/dotnet/framework/sdk:5.0
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8 AS build
 WORKDIR /app
 
-COPY SampleWebApplication .
-RUN pwsh
-#RUN powershell nuget restore; msbuild /p:Configuration=Release /p:publishUrl=/out /p:DeployDefaultTarget=WebPublish /p:DeployOnBuild=True /p:WebPublishMethod=FileSystem /p:DeleteExistingFiles=True
+COPY *.sln .
+COPY aspnetmvcapp/*.csproj ./aspnetmvcapp/
+RUN nuget restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:5.0.17-bullseye-slim-amd64 AS runtime
-#mcr.microsoft.com/dotnet/framework/aspnet:5.0
-WORKDIR /app
-COPY --from=build /out /inetpub/wwwroot
+COPY aspnetmvcapp/. ./aspnetmvcapp/
+WORKDIR /app/aspnetmvcapp
+RUN msbuild /p:Configuration=Release
+
+FROM mcr.microsoft.com/dotnet/framework/aspnet:4.8 AS runtime
+WORKDIR /inetpub/wwwroot
+COPY --from=build /app/aspnetmvcapp/. ./
